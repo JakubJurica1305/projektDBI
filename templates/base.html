@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>{%block title%}HLAVNÍ STRÁNKA{%endblock%}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename = 'styles.css') }}">
+</head>
+<body>
+    <nav>
+      <ul><center>
+        <li><a href="{{ url_for('root') }}">HLAVNÍ STRÁNKA</a></li>
+        <li><a href="{{ url_for('login') }}">LOGIN</a></li>
+        <li><a href="{{ url_for('registration') }}">REGISTRACE</a></li>
+      </center>
+      </ul>
+    </nav>
+  {% block obsah %}
+    <center><h1>ZKRACOVÁTKO ŽIVOTA A LINKŮ (HLAVNĚ ŽIVOTA)</h1></center>
+    <center><p>Zadej svůj předlouhý link zde:</p></center>
+    <form method = "post">
+    <center>
+      <textarea name = "link" rows = "1" cols = "40"></textarea>
+      <p>
+          <button type = "submit">Odeslat</button>
+      </p>
+    </center>
+  {% endblock obsah %}
+{% if 'user' in session %}
+Uživatel: {{session ['user']}}
+<a href = "{{url_for ('logout')}}">Logout</a>
+{%else%}
+Nikdo není přihlášen
+{%endif%}
+</form>
+</body>
