@@ -21,6 +21,7 @@ app.secret_key = b"x6\x87j@\xd3\x88\x0e8\xe8pM\x13\r\xafa\x8b\xdbp\x8a\x1f\xd41\
 @app.route("/", methods=["GET"])
 def root():
     return render_template("base.html")
+
 @app.route("/login/", methods=["GET"])
 def login():
     return render_template("login.html")
@@ -32,11 +33,11 @@ def login_post():
     url = request.args.get("url", "")  # url je obsažená v adrese. proto request.args
     with SQLite('data.sqlite') as cursor:
         response = cursor.execute(
-            f"SELECT login, password FROM user WHERE login = ?", [jmeno])
+            f"SELECT login, passwd FROM user WHERE login = ?", [jmeno])
         response = response.fetchone()
         if response:
             login, passwd = response
-            if passwd:
+            if check_password_hash(passwd, heslo):
                 session["user"] = jmeno
                 flash("Jsi přihlášen!", "success")
                 if url:
@@ -54,6 +55,7 @@ def logout():
     session.pop("user", None)
     flash("Byl jsi odhlášen!", "success")
     return redirect(url_for("root"))
+
 
 @app.route("/registration/", methods = ["GET"])
 def registration():
@@ -74,9 +76,10 @@ def registration_post():
         flash("Musíte zadat 2x stejné heslo", "error")
         return redirect(url_for("registration"))
     
+    hash_ = generate_password_hash(heslo1)
     try:
         with SQLite ("data.sqlite") as cursor:
-            cursor.execute('INSERT INTO user (login, password) VALUES (?, ?)', [jmeno, heslo1])
+            cursor.execute('INSERT INTO user (login, passwd) VALUES (?, ?)', [jmeno, hash_])
         flash(f"Uživatel `{jmeno}` byl přidán!", "success")
     except IntegrityError:
         flash(f"Uživatel `{jmeno}` již existuje!", "error")
@@ -93,18 +96,19 @@ def vzkazy():
         response = response.fetchall()
     return render_template("base.html", response = response)
 
-@app.route("/vzkazy/", methods = ['POST'])
+@app.route("/", methods = ['POST'])
 def vzkazy_post():
     if "user" not in session:
         flash("Pouze pro přihlášené")
-        return redirect(url_for("login", url = request.path))        
+        return redirect(url_for("login", url = request.path))  
+          
     with SQLite("data.sqlite") as cursor:
         response = cursor.execute("SELECT id FROM user WHERE login = ?", [session["user"]])
-        #response = response.fetchone()
+        response = response.fetchone()
         user_id = list(response.fetchone())[0]
 
     vzkaz = request.form.get('vzkaz')
     if vzkaz:
         with SQLite("data.sqlite") as cursor:
-            cursor.execute("INSERT INTO message (user_id, body, datetime) VALUES (?, ?, ?)", [user_id, vzkaz, datetime.datetime.now()])
-    return redirect(url_for("vzkazy"))
+            cursor.execute("INSERT INTO odkaz (ID_user, link) VALUES (?, ?)", [user_id, vzkaz,])
+    return redirect(url_for("login"))
